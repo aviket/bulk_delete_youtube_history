@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube History Bulk Deleter",
+  "version": "1.0",
+  "description": "Adds checkboxes to bulk delete YouTube history.",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
