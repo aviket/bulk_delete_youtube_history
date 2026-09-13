@@ -2,7 +2,15 @@
 // 1. Setup & Global Variables
 // ==========================================
 
+// ==========================================
+// 1. Setup & Global Variables
+// ==========================================
+
 let observer = null;
+
+// Last checkbox clicked by the user.
+// Used as the anchor for Shift+Click / Ctrl+Click range selection.
+let lastClickedCheckbox = null;
 
 // Listen for YouTube's custom SPA navigation event
 document.addEventListener('yt-navigate-finish', () => {
@@ -101,7 +109,40 @@ function injectCheckboxes() {
         });
 
         // Prevent opening the video when checking the box
-        checkbox.onclick = (e) => e.stopPropagation();
+        // ------------------------------------------
+// Checkbox selection behavior
+// ------------------------------------------
+
+// Prevent the checkbox click from opening the YouTube video.
+checkbox.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const allCheckboxes = Array.from(
+        document.querySelectorAll(".yt-bulk-checkbox")
+    );
+
+    // Shift+Click or Ctrl+Click = select the entire range
+    if ((e.shiftKey || e.ctrlKey) && lastClickedCheckbox) {
+        const startIndex = allCheckboxes.indexOf(lastClickedCheckbox);
+        const endIndex = allCheckboxes.indexOf(checkbox);
+
+        if (startIndex !== -1 && endIndex !== -1) {
+            const from = Math.min(startIndex, endIndex);
+            const to = Math.max(startIndex, endIndex);
+
+            for (let i = from; i <= to; i++) {
+                allCheckboxes[i].checked = true;
+            }
+        }
+    } else {
+        // Normal click:
+        // Browser performs the normal checkbox toggle automatically.
+        checkbox.checked = checkbox.checked;
+    }
+
+    // Current checkbox becomes the new range anchor.
+    lastClickedCheckbox = checkbox;
+});
 
         // Target old thumbnails or the new image view models
         const thumbnail = row.querySelector('ytd-thumbnail, yt-image-view-model, a#thumbnail');
@@ -155,7 +196,11 @@ async function processDeletions() {
             
             if (popupContainer) {
                 // Look for the removal text
-                const spans = Array.from(popupContainer.querySelectorAll('span.yt-core-attributed-string'));
+                const spans = Array.from(
+    popupContainer.querySelectorAll(
+        'span.yt-core-attributed-string, span.ytAttributedStringHost'
+    )
+);
                 const removeSpan = spans.find(span => span.textContent.trim() === 'Remove from watch history');
                 
                 if (removeSpan) {
